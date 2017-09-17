@@ -65,7 +65,7 @@ class Decoder(srd.Decoder):
 	def __init__(self):
 		self.state = 'IDLE'
 		self.lastbit = None
-		self.bitstartsample = self.bitendsample = self.framestartsample = self.frameendsample = self.blockstartsample = self.blockendsample = self.twoedgesagosample = self.oneedgeagosample = self.currentedgesample = self.lastcycletype = self.cycletype = self.count = None
+		self.bitstartsample = self.bitendsample = self.framestartsample = self.frameendsample = self.blockstartsample = self.blockendsample = self.twoedgesagosample = self.oneedgeagosample = self.currentedgesample = self.lastcycletype = self.cycletype = self.count = 0
 	
 	def start(self):
 		self.out_python = self.register(srd.OUTPUT_PYTHON)
@@ -73,11 +73,13 @@ class Decoder(srd.Decoder):
 		self.devicetype = 0 if self.options['devicetype'] == 'blaster' else 1
 		
 		if self.devicetype == 0:
+			#Blaster
 			self.margin = int(self.samplerate * 0.0000625) - 1 # 62.5us
 			
 			self.activehalfcycle = int(self.samplerate * 0.000125) - 1 #125us
 			self.inactivehalfcycle = int(self.samplerate * 0.000250) - 1 #250us
 		else:
+			#SmartDevice
 			self.margin = int(self.samplerate * 0.0000565) - 1 #56.5us
 			
 			self.activehalfcycle = int(self.samplerate * 0.000113) - 1 #113us
@@ -133,24 +135,28 @@ class Decoder(srd.Decoder):
 			length = self.currentedgesample - self.oneedgeagosample
 			#print('Length since last edge', length, '.')
 			
-			if length in range(self.inactivehalfcycle - self.margin, self.inactivehalfcycle + self.margin):
+			if length in range(self.inactivehalfcycle - self.margin, self.inactivehalfcycle + self.margin + 1):
 				self.cycletype = 'INACTIVE'
-			elif length in range(self.activehalfcycle - self.margin, self.activehalfcycle + self.margin):
+			elif length in range(self.activehalfcycle - self.margin, self.activehalfcycle + self.margin + 1):
 				self.cycletype = 'ACTIVE'
 			else:
 				#Invalid half-cycle length. Clean up!
 				self.cycletype = 'ERROR'
+				print('L', length)
+				print('I', self.inactivehalfcycle)
+				print('A', self.activehalfcycle)
+				print('M', self.margin)
 			
 			if self.cycletype == 'ACTIVE' and self.lastcycletype == 'ACTIVE':
 				#Two unprocessed ACTIVE half-cycles
 				self.lastbit = 0
-				self.putrawbit()
+				self.putbitraw()
 				
 				self.cycletype = 'PROCESSED'
 			elif self.cycletype == 'INACTIVE' and self.lastcycletype == 'INACTIVE':
 				#Two unprocessed INACTIVE half-cycles
 				self.lastbit = 1
-				self.putrawbit()
+				self.putbitraw()
 				
 				self.cycletype = 'PROCESSED'
 			elif self.cycletype == 'ERROR':
