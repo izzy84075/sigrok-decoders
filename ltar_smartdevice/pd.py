@@ -84,7 +84,6 @@ class Decoder(srd.Decoder):
 				if argument == 0:
 					#Start bit!
 					self.putbitstart(startsample, endsample)
-					self.currentframedata = []
 					self.currentframedata.append([startsample, endsample, argument])
 					self.state = 'DATA'
 			elif self.state == 'DATA':
@@ -103,6 +102,7 @@ class Decoder(srd.Decoder):
 					
 					self.putframe(self.currentframedata, data)
 					self.currentblockdata.append([self.currentframedata, data])
+					self.currentframedata = []
 					self.state = 'FRAMESTOP2'
 				else:
 					#Framing error!
@@ -120,7 +120,6 @@ class Decoder(srd.Decoder):
 				else:
 					#Start bit of another frame
 					self.putbitstart(startsample, endsample)
-					self.currentframedata = []
 					self.currentframedata.append([startsample, endsample, argument])
 					self.state = 'DATA'
 			elif self.state == 'BLOCKSTOP':
@@ -133,13 +132,22 @@ class Decoder(srd.Decoder):
 				else:
 					#Start bit of another frame
 					self.putbitstart(startsample, endsample)
-					self.currentframedata = []
 					self.currentframedata.append([startsample, endsample, argument])
 					self.state = 'DATA'
 		elif datatype == 'ERROR':
 			if argument == 'PHASE':
 				#Resynced to the proper phase of the signal. Abort all current decodes.
-				argument = argument
+				if len(self.currentframedata) != 0:
+					self.putframingerror(self.currentframedata)
+					self.currentframedata = []
+				if len(self.currentblockdata) != 0:
+					self.putblockerror(self.currentblockdata)
+					self.currentblockdata = []
 			elif argument == 'INVALID':
 				#A cycle that doesn't match our AFSK settings. Abort all current decodes.
-				argument = argument
+				if len(self.currentframedata) != 0:
+					self.putframingerror(self.currentframedata)
+					self.currentframedata = []
+				if len(self.currentblockdata) != 0:
+					self.putblockerror(self.currentblockdata)
+					self.currentblockdata = []
