@@ -75,6 +75,7 @@ class Decoder(srd.Decoder):
 		self.currentframedata = []
 		self.blockstartsample = self.blockendsample = 0
 		self.currentblockdata = []
+		self.spacercount = 0
 	
 	def start(self):
 		self.out_python = self.register(srd.OUTPUT_PYTHON)
@@ -108,7 +109,7 @@ class Decoder(srd.Decoder):
 					self.putframe(self.currentframedata, data)
 					self.currentblockdata.append([self.currentframedata, data])
 					self.currentframedata = []
-					self.state = 'FRAMESTOP2'
+					self.state = 'WAITINGFORBLOCKEND'
 				else:
 					#Framing error!
 					self.putframingerror(self.currentframedata)
@@ -116,29 +117,41 @@ class Decoder(srd.Decoder):
 					if len(self.currentblockdata) != 0:
 						self.putblockerror(self.currentblockdata, endframe)
 						self.currentblockdata = []
+					self.spacercount = 0
 					self.state = 'IDLE'
-			elif self.state == 'FRAMESTOP2':
+			elif self.state == 'WAITINGFORBLOCKEND':
 				if argument == 1:
-					#Optional spacer bit between frames.
-					self.putbitspacer(startsample, endsample)
-					self.state = 'BLOCKSTOP'
+					#Spacer bits between frames/blocks
+					#15 spacer bits marks the end of a block.
+					#Frames within a block should have no more than 10 spacers between them.
+					#A device should generate 20 spacers at the end of a block, to guarantee proper synchronization between devices
+					if self.spacercount < 14:
+						self.putbitspacer(startsample, endsample)
+						self.spacercount = self.spacercount + 1
+					else:
+						#End of a block!
+						self.putbitblockend(startsample, endsample)
+						self.putblock(self.currentblockdata, endsample)
+						self.currentblockdata = []
+						self.spacercount = 0
+						self.state = 'IDLE'
 				else:
 					#Start bit of another frame
-					self.putbitstart(startsample, endsample)
-					self.currentframedata.append([startsample, endsample, argument])
-					self.state = 'DATA'
-			elif self.state == 'BLOCKSTOP':
-				if argument == 1:
-					#End of a block!
-					self.putbitblockend(startsample, endsample)
-					self.putblock(self.currentblockdata, endsample)
-					self.currentblockdata = []
-					self.state = 'IDLE'
-				else:
-					#Start bit of another frame
-					self.putbitstart(startsample, endsample)
-					self.currentframedata.append([startsample, endsample, argument])
-					self.state = 'DATA'
+					if self.spacercount < 10:
+						self.putbitstart(startsample, endsample)
+						self.currentframedata.append([startsample, endsample, argument])
+						self.spacercount = 0
+						self.state = 'DATA'
+					else:
+						if len(self.currentframedata) == 0:
+							self.currentframedata.append([startsample, endsample, argument])
+						self.putframingerror(self.currentframedata)
+						self.currentframedata = []
+						if len(self.currentblockdata) != 0:
+							self.putblockerror(self.currentblockdata, endframe)
+							self.currentblockdata = []
+						self.spacercount = 0
+						self.state = 'IDLE'
 		elif datatype == 'ERROR':
 			if argument == 'PHASE':
 				#Resynced to the proper phase of the signal. Abort all current decodes.
@@ -148,6 +161,8 @@ class Decoder(srd.Decoder):
 				if len(self.currentblockdata) != 0:
 					self.putblockerror(self.currentblockdata, endframe)
 					self.currentblockdata = []
+				self.spacercount = 0
+				self.state = 'IDLE'
 			elif argument == 'INVALID':
 				#A cycle that doesn't match our AFSK settings. Abort all current decodes.
 				if len(self.currentframedata) != 0:
@@ -156,3 +171,5 @@ class Decoder(srd.Decoder):
 				if len(self.currentblockdata) != 0:
 					self.putblockerror(self.currentblockdata, endframe)
 					self.currentblockdata = []
+				self.spacercount = 0
+				self.state = 'IDLE'
