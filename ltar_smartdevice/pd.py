@@ -25,11 +25,12 @@ class Decoder(srd.Decoder):
 		('frame', 'Data frame'),
 		('frame-error', 'Framing error'),
 		('block', 'Data block'),
+		('block-error', 'Block error'),
 	)
 	annotation_rows = (
 		('bits', 'Bits', (0, 1, 2, 3, 4)),
 		('frames', 'Frames', (5, 6,)),
-		('blocks', 'Blocks', (7,)),
+		('blocks', 'Blocks', (7, 8,)),
 	)
 	
 	def putbitstart(self, startsample, endsample):
@@ -63,6 +64,10 @@ class Decoder(srd.Decoder):
 	def putblock(self, currentblockdata, endsample):
 		self.put(currentblockdata[0][0][0][0], endsample, self.out_ann,
 				[7, ['Block, %d frames' % len(currentblockdata), 'B %d' % len(currentblockdata)]])
+	
+	def putblockerror(self, currentblockdata, endsample):
+		self.put(currentblockdata[0][0][0][0], endsample, self.out_ann,
+				[8, ['Block Error', 'Block E', 'BE']])
 	
 	def __init__(self):
 		self.state = 'IDLE'
@@ -109,7 +114,7 @@ class Decoder(srd.Decoder):
 					self.putframingerror(self.currentframedata)
 					self.currentframedata = []
 					if len(self.currentblockdata) != 0:
-						self.putblockerror(self.currentblockdata)
+						self.putblockerror(self.currentblockdata, endframe)
 						self.currentblockdata = []
 					self.state = 'IDLE'
 			elif self.state == 'FRAMESTOP2':
@@ -141,7 +146,7 @@ class Decoder(srd.Decoder):
 					self.putframingerror(self.currentframedata)
 					self.currentframedata = []
 				if len(self.currentblockdata) != 0:
-					self.putblockerror(self.currentblockdata)
+					self.putblockerror(self.currentblockdata, endframe)
 					self.currentblockdata = []
 			elif argument == 'INVALID':
 				#A cycle that doesn't match our AFSK settings. Abort all current decodes.
@@ -149,5 +154,5 @@ class Decoder(srd.Decoder):
 					self.putframingerror(self.currentframedata)
 					self.currentframedata = []
 				if len(self.currentblockdata) != 0:
-					self.putblockerror(self.currentblockdata)
+					self.putblockerror(self.currentblockdata, endframe)
 					self.currentblockdata = []
