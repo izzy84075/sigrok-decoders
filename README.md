@@ -16,6 +16,10 @@ Finish decoding the multibyte packets, and check the checksums of them.
 
 The very beginnings of a decoder for Recoil laser tag IR signatures. Very much a work in progress, as I'm still figuring out how this protocol works. Was also my first Sigrok decoder, so I'll be coming back to it once I finish the others and cleaning it up. Currently gets the bit count and data from the signatures, but doesn't always decode them properly.
 
+## afsk
+
+Decodes AFSK datastreams and outputs bits. Configurable frequency and error margin.
+
 ## ltar_smartdevice
 
-The start of a decoder for the LTAR laser tag blaster's Smart Device protocol. Currently broken.
+The start of a decoder for the LTAR laser tag blaster's Smart Device protocol. Stacks onto the afsk decoder. Currently picks out frames and blocks, but does not actually decode them yet.
