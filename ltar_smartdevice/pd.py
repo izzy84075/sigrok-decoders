@@ -16,10 +16,6 @@ class Decoder(srd.Decoder):
 	license = 'unknown'
 	inputs = ['afsk_bits']
 	outputs = ['ltar_smartdevice']
-	options = (
-		{'id': 'devicetype', 'desc': 'Blaster or SmartDevice', 'default': 'blaster',
-			'values': ('blaster', 'smartdevice')},
-	)
 	annotations = (
 		('bit-start', 'Start Bit'),
 		('bit-data', 'Data Bit'),
