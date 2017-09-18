@@ -56,17 +56,17 @@ class Decoder(srd.Decoder):
 		self.put(startsample, endsample, self.out_ann,
 				[4, ['Block Stop', 'Block']])
 	
-	def putframe(self, currentframedata):
+	def putframe(self, currentframedata, data):
 		self.put(currentframedata[0][0], currentframedata[len(currentframedata)-1][1], self.out_ann,
-				[5, ['Data frame', 'Data', 'D']])
+				[5, ['Data frame: 0x%02X' % data, 'Data: 0x%02X' % data, 'D 0x%02X' % data]])
 	
 	def putframingerror(self, currentframedata):
 		self.put(currentframedata[0][0], currentframedata[len(currentframedata)-1][1], self.out_ann,
 				[6, ['Data framing error', 'Framing error', 'Frame Error', 'FE']])
 	
 	def putblock(self, currentblockdata, endsample):
-		self.put(currentblockdata[0][0][0], endsample, self.out_ann,
-				[7, ['Block', 'B']])
+		self.put(currentblockdata[0][0][0][0], endsample, self.out_ann,
+				[7, ['Block, %d frames' % len(currentblockdata), 'B %d' % len(currentblockdata)]])
 	
 	def __init__(self):
 		self.state = 'IDLE'
@@ -102,8 +102,11 @@ class Decoder(srd.Decoder):
 					#End of a data frame
 					self.putbitstop(startsample, endsample)
 					self.currentframedata.append([startsample, endsample, argument])
-					self.putframe(self.currentframedata)
-					self.currentblockdata.append(self.currentframedata)
+					
+					data = (self.currentframedata[8][2] << 7) | (self.currentframedata[7][2] << 6) | (self.currentframedata[6][2] << 5) | (self.currentframedata[5][2] << 4) | (self.currentframedata[4][2] << 3) | (self.currentframedata[3][2] << 2) | (self.currentframedata[2][2] << 1) | self.currentframedata[1][2]
+					
+					self.putframe(self.currentframedata, data)
+					self.currentblockdata.append([self.currentframedata, data])
 					self.state = 'FRAMESTOP2'
 				else:
 					#Framing error!
