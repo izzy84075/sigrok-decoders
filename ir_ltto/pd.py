@@ -4,6 +4,18 @@
 
 import sigrokdecode as srd
 
+'''
+OUTPUT_PYTHON format:
+
+Packet:
+	[<synclength>, <bitcount>, <data>]
+	
+	<synclength> is either 'SHORT' or 'LONG'.
+	<bitcount> is an int that counts the bits of the signature(You should only ever see 5, 7, 8, or 9 here).
+	<data> is the data from the signature, as an int.
+	
+'''
+
 class SamplerateError(Exception):
     pass
 

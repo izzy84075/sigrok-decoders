@@ -4,6 +4,46 @@
 
 import sigrokdecode as srd
 
+'''
+OUTPUT_PYTHON format:
+
+Packet:
+	[<ptype>, <pdata>]
+	
+	<pytpe> currently only has one value, 'BLOCK'.
+	
+	<pdata> is an annoyingly complicated tuple structure, that looks like the following:
+		[
+			[
+				10x [
+					startofbit as samplenum,
+					endofbit as samplenum,
+					bitdata as int
+				],
+				
+				framedata as int
+			],
+		]
+	This does allow for an arbitrary number of frames in a block, but makes accessing the individual pieces annoying.
+	
+	Note also that there are 10 bits in the frame, this includes the "start"(bit 0) and "stop"(bit 9) bits!
+	
+	framedata is the middle 8 bits, bit-swapped to account for the protocol being LSB-first and most people wanting MSB-first.
+	
+	Cheatsheet:
+		bit-level data:
+			startofbit is pdata[whichframe][0][whichbit][0]
+			endofbit is pdata[whichframe][0][whichbit][1]
+			bitdata is pdata[whichframe][0][whichbit][2]
+		
+		frame-level data:
+			framedata is pdata[whichframe][1]
+		
+		See how many frames are in the block:
+			len(pdata)
+			
+'''
+
 class SamplerateError(Exception):
     pass
 
@@ -62,6 +102,8 @@ class Decoder(srd.Decoder):
 				[6, ['Data framing error', 'Framing error', 'Frame Error', 'FE']])
 	
 	def putblock(self, currentblockdata, endsample):
+		self.put(currentblockdata[0][0][0][0], endsample, self.out_python,
+				['BLOCK', currentblockdata])
 		self.put(currentblockdata[0][0][0][0], endsample, self.out_ann,
 				[7, ['Block, %d frames' % len(currentblockdata), 'B %d' % len(currentblockdata)]])
 	
