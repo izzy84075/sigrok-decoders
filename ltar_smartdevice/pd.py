@@ -157,7 +157,7 @@ class Decoder(srd.Decoder):
 					self.putframingerror(self.currentframedata)
 					self.currentframedata = []
 					if len(self.currentblockdata) != 0:
-						self.putblockerror(self.currentblockdata, endframe)
+						self.putblockerror(self.currentblockdata, endsample)
 						self.currentblockdata = []
 					self.spacercount = 0
 					self.state = 'IDLE'
@@ -190,7 +190,7 @@ class Decoder(srd.Decoder):
 						self.putframingerror(self.currentframedata)
 						self.currentframedata = []
 						if len(self.currentblockdata) != 0:
-							self.putblockerror(self.currentblockdata, endframe)
+							self.putblockerror(self.currentblockdata, endsample)
 							self.currentblockdata = []
 						self.spacercount = 0
 						self.state = 'IDLE'
@@ -201,7 +201,7 @@ class Decoder(srd.Decoder):
 					self.putframingerror(self.currentframedata)
 					self.currentframedata = []
 				if len(self.currentblockdata) != 0:
-					self.putblockerror(self.currentblockdata, endframe)
+					self.putblockerror(self.currentblockdata, endsample)
 					self.currentblockdata = []
 				self.spacercount = 0
 				self.state = 'IDLE'
@@ -211,7 +211,7 @@ class Decoder(srd.Decoder):
 					self.putframingerror(self.currentframedata)
 					self.currentframedata = []
 				if len(self.currentblockdata) != 0:
-					self.putblockerror(self.currentblockdata, endframe)
+					self.putblockerror(self.currentblockdata, endsample)
 					self.currentblockdata = []
 				self.spacercount = 0
 				self.state = 'IDLE'
