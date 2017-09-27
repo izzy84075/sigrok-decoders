@@ -22,4 +22,8 @@ Decodes AFSK datastreams and outputs bits. Configurable frequency and error marg
 
 ## ltar_smartdevice
 
-The start of a decoder for the LTAR laser tag blaster's Smart Device protocol. Stacks onto the afsk decoder. Currently picks out frames and blocks, but does not actually decode them yet.
+The start of a decoder for the LTAR laser tag blaster's Smart Device protocol. Stacks onto the afsk decoder. Currently picks out frames and blocks, and passes them out to ltar_smartdevice_decode.
+
+## ltar_smartdevice_decode
+
+Takes the output from ltar_smartdevice and gets the details of the data out of the blocks. Currently only handles the BType and CSum fields.
