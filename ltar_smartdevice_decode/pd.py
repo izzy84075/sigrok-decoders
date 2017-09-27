@@ -11,6 +11,19 @@ btype = {
 	0x02: 'TAGGER-STATUS',
 }
 
+weapmode = {
+	
+}
+
+shieldstatus = {
+	0x00: 'Ready',
+}
+
+huntingdirection = {
+	0x00: 'Normal',
+	0x01: 'Reversed',
+}
+
 class Decoder(srd.Decoder):
 	api_version = 3
 	id = 'ltar_smartdevice_decode'
@@ -85,6 +98,100 @@ class Decoder(srd.Decoder):
 	def putData(self, btype, index, frame):
 		self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
 				[0, ['Block Data %d' % index, 'BData%d' % index]])
+		if btype == 0x02:
+			#TAGGER-STATUS
+			if index == 0:
+				#BData0
+				#Game Settings
+				self.put(frame[0][1][0], frame[0][3][1], self.out_ann,
+					[2, ['Player Number', 'Player Num', 'Player #', 'Play #', 'P']])
+				self.put(frame[0][1][0], frame[0][3][1], self.out_ann,
+					[3, ['%d' % (frame[1] & 0x07),]])
+				self.put(frame[0][4][0], frame[0][5][1], self.out_ann,
+					[2, ['Team Number', 'Team Num', 'Team #', 'T']])
+				self.put(frame[0][4][0], frame[0][5][1], self.out_ann,
+					[3, ['%d' % ((frame[1] & 0x18) >> 3),]])
+			elif index == 1:
+				#BData1
+				#Game Status
+				
+				#Weapon mode
+				selectedweapmode = frame[1] & 0x03;
+				self.put(frame[0][1][0], frame[0][2][1], self.out_ann,
+					[2, ['Weapon Mode', 'Weap Mode', 'WM']])
+				if weapmode.get(selectedweapmode) != None:
+					self.put(frame[0][1][0], frame[0][2][1], self.out_ann,
+						[3, ['%s' % weapmode[selectedweapmode]]])
+				else:
+					self.put(frame[0][1][0], frame[0][2][1], self.out_ann,
+						[3, ['Unknown', 'Unk']])
+				
+				#Shield status
+				currentshieldstatus = (frame[1] & 0x0C) >> 2;
+				self.put(frame[0][3][0], frame[0][4][1], self.out_ann,
+					[2, ['Shield State', 'Shield St', 'Shld']])
+				if shieldstatus.get(currentshieldstatus) != None:
+					self.put(frame[0][3][0], frame[0][4][1], self.out_ann,
+						[3, ['%s' % shieldstatus[selectedweapmode]]])
+				else:
+					self.put(frame[0][3][0], frame[0][4][1], self.out_ann,
+						[3, ['Unknown', 'Unk']])
+				
+				#Hunting direction
+				currenthuntingdirection = (frame[1] & 0x20) >> 5;
+				self.put(frame[0][6][0], frame[0][6][1], self.out_ann,
+					[2, ['Hunting Direction', 'Hunting Dir', 'Hnt Dir']])
+				self.put(frame[0][6][0], frame[0][6][1], self.out_ann,
+					[3, ['%s' % huntingdirection[currenthuntingdirection]]])
+			elif index == 2:
+				#BData2
+				#Health remaining
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[2, ['Health Remaining', 'Health Remain', 'Health Rem', 'Health', 'H']])
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[3, ['%d' % frame[1],]])
+			elif index == 3:
+				#BData3
+				#Loaded Ammo
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[2, ['Loaded Ammo', 'Ammo']])
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[3, ['%d' % frame[1],]])
+			elif index == 4:
+				#BData4
+				#Remaining Ammo Low Byte
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[2, ['Remaining Ammo, Low', 'Remain Ammo, Low', 'Rem Ammo, L']])
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[3, ['%d' % frame[1],]])
+			elif index == 5:
+				#BData5
+				#Remaining Ammo High Byte
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[2, ['Remaining Ammo, High', 'Remain Ammo, High', 'Rem Ammo, H']])
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[3, ['%d' % (frame[1] << 8),]])
+			elif index == 6:
+				#BData6
+				#Shield Time
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[2, ['Shield Time', 'Shld Tim']])
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[3, ['%d' % frame[1],]])
+			elif index == 7:
+				#BData7
+				#Game Time Minutes
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[2, ['Game Time, Minutes', 'Game Time, Min', 'Game Tim, Min', 'Game Min']])
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[3, ['%d' % frame[1],]])
+			elif index == 8:
+				#BData8
+				#Game Time Seconds
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[2, ['Game Time, Seconds', 'Game Time, Sec', 'Game Tim, Sec', 'Game Sec']])
+				self.put(frame[0][1][0], frame[0][8][1], self.out_ann,
+					[3, ['%d' % frame[1],]])
 	
 	def __init__(self):
 		self.state = 'IDLE'
