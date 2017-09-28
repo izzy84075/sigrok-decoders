@@ -8,15 +8,31 @@ class SamplerateError(Exception):
     pass
 
 btype = {
+	0x01: 'PRIORITY-UPDATE',
 	0x02: 'TAGGER-STATUS',
+	
+	0x18: 'COUNT-DOWN',
+	
+	0x20: 'VARIABLE-CONTENTS',
+	
+	0x22: 'GAME-CONTENTS',
+	
+	0xA0: 'READ-VARIABLE',
+	
+	0xC0: 'WRITE-VARIABLE',
+	
+	0xC2: 'WRITE-GAME',
 }
 
 weapmode = {
-	
+	0x01: 'Semi-Automatic',
+	0x02: 'Full-Automatic',
 }
 
 shieldstatus = {
 	0x00: 'Ready',
+	0x01: 'Active',
+	0x02: 'Cooldown',
 }
 
 huntingdirection = {
@@ -121,7 +137,7 @@ class Decoder(srd.Decoder):
 					[2, ['Weapon Mode', 'Weap Mode', 'WM']])
 				if weapmode.get(selectedweapmode) != None:
 					self.put(frame[0][1][0], frame[0][2][1], self.out_ann,
-						[3, ['%s' % weapmode[selectedweapmode]]])
+						[3, ['%s' % weapmode[selectedweapmode],]])
 				else:
 					self.put(frame[0][1][0], frame[0][2][1], self.out_ann,
 						[3, ['Unknown', 'Unk']])
@@ -132,7 +148,7 @@ class Decoder(srd.Decoder):
 					[2, ['Shield State', 'Shield St', 'Shld']])
 				if shieldstatus.get(currentshieldstatus) != None:
 					self.put(frame[0][3][0], frame[0][4][1], self.out_ann,
-						[3, ['%s' % shieldstatus[selectedweapmode]]])
+						[3, ['%s' % shieldstatus[currentshieldstatus],]])
 				else:
 					self.put(frame[0][3][0], frame[0][4][1], self.out_ann,
 						[3, ['Unknown', 'Unk']])
@@ -142,7 +158,7 @@ class Decoder(srd.Decoder):
 				self.put(frame[0][6][0], frame[0][6][1], self.out_ann,
 					[2, ['Hunting Direction', 'Hunting Dir', 'Hnt Dir']])
 				self.put(frame[0][6][0], frame[0][6][1], self.out_ann,
-					[3, ['%s' % huntingdirection[currenthuntingdirection]]])
+					[3, ['%s' % huntingdirection[currenthuntingdirection],]])
 			elif index == 2:
 				#BData2
 				#Health remaining
